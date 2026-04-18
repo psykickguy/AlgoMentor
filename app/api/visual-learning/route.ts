@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { HarmBlockThreshold, HarmCategory } from "@google/generative-ai";
 
@@ -18,16 +18,22 @@ const safetySettings = [
 export async function POST(req: Request) {
   try {
     // Parse the incoming request data
-    const { selectedTopic , language} = await req.json();
+    const { selectedTopic, language } = await req.json();
 
     // Validate required fields
     if (!selectedTopic) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 },
+      );
     }
 
     // Initialize Google Generative AI model
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", safetySettings });
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.0-flash",
+      safetySettings,
+    });
 
     // Construct the prompt for the AI model
     const prompt = createPrompt(selectedTopic, language);
@@ -39,8 +45,11 @@ export async function POST(req: Request) {
     // Return the AI's response
     return NextResponse.json({ reply: aiResponse });
   } catch (error) {
-    console.error('Error:', error);
-    return NextResponse.json({ error: 'An error occurred while processing your request' }, { status: 500 });
+    console.error("Error:", error);
+    return NextResponse.json(
+      { error: "An error occurred while processing your request" },
+      { status: 500 },
+    );
   }
 }
 

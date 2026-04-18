@@ -1,46 +1,61 @@
-'use client'
+"use client";
 
-import React, { useState, useRef, useEffect } from 'react'
-import { Editor, OnMount } from '@monaco-editor/react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Code, Play } from 'lucide-react'
-import { languageConfigs, LanguageConfig } from '@/utils/languageConfig'
-import * as monaco from 'monaco-editor'
+import React, { useState, useRef, useEffect } from "react";
+import { Editor, OnMount } from "@monaco-editor/react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Code, Play } from "lucide-react";
+import { languageConfigs, LanguageConfig } from "../utils/languageConfig";
+import * as monaco from "monaco-editor";
 
 interface CodeEditorWithPistonPropsProps {
-  language: string
-  code: string
-  darkMode?: boolean
-  onChange?: (code: string) => void
+  language: string;
+  code: string;
+  darkMode?: boolean;
+  onChange?: (code: string) => void;
 }
 
-export function CodeEditorWithPistonProps({ language, code: initialCode, darkMode = false, onChange }: CodeEditorWithPistonPropsProps) {
-  const [code, setCode] = useState<string>(initialCode)
-  const [output, setOutput] = useState<string>('')
-  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null)
+export function CodeEditorWithPistonProps({
+  language,
+  code: initialCode,
+  darkMode = false,
+  onChange,
+}: CodeEditorWithPistonPropsProps) {
+  const [code, setCode] = useState<string>(initialCode);
+  const [output, setOutput] = useState<string>("");
+  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
 
-  const selectedLanguage = languageConfigs.find(lang => lang.pistonLanguage.toLowerCase() === language.toLowerCase()) || languageConfigs[0]
-  console.log(language.toLowerCase())
+  const selectedLanguage =
+    languageConfigs.find(
+      (lang) => lang.pistonLanguage.toLowerCase() === language.toLowerCase(),
+    ) || languageConfigs[0];
+  console.log(language.toLowerCase());
 
   useEffect(() => {
-    setCode(initialCode)
-  }, [initialCode])
+    setCode(initialCode);
+  }, [initialCode]);
 
   const handleEditorDidMount: OnMount = (editor) => {
-    editorRef.current = editor
-  }
+    editorRef.current = editor;
+  };
 
   const formatCode = () => {
-    setCode((prevCode) => prevCode.trim().replace(/\n\s*\n/g, '\n\n'))
-  }
+    setCode((prevCode) => prevCode.trim().replace(/\n\s*\n/g, "\n\n"));
+  };
 
   const runCode = async () => {
     try {
-      const response = await fetch('https://emkc.org/api/v2/piston/execute', {
-        method: 'POST',
+      const response = await fetch("https://emkc.org/api/v2/piston/execute", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           language: language,
@@ -51,21 +66,21 @@ export function CodeEditorWithPistonProps({ language, code: initialCode, darkMod
             },
           ],
         }),
-      })
+      });
 
-      const data = await response.json()
-      setOutput(data.run.output)
+      const data = await response.json();
+      setOutput(data.run.output);
     } catch (error) {
-      console.error('Error executing code:', error)
-      setOutput('Error executing code. Please try again.')
+      console.error("Error executing code:", error);
+      setOutput("Error executing code. Please try again.");
     }
-  }
+  };
 
   const handleCodeChange = (value: string | undefined) => {
-    const newCode = value || ''
-    setCode(newCode)
-    onChange?.(newCode)
-  }
+    const newCode = value || "";
+    setCode(newCode);
+    onChange?.(newCode);
+  };
 
   return (
     <Card className="w-full max-w-4xl">
@@ -77,7 +92,7 @@ export function CodeEditorWithPistonProps({ language, code: initialCode, darkMod
         <Editor
           height="400px"
           language={selectedLanguage.monacoLanguage}
-          theme={darkMode ? 'vs-dark' : 'light'}
+          theme={darkMode ? "vs-dark" : "light"}
           value={code}
           options={{
             minimap: { enabled: false },
@@ -110,6 +125,5 @@ export function CodeEditorWithPistonProps({ language, code: initialCode, darkMod
         )}
       </CardFooter>
     </Card>
-  )
+  );
 }
-
