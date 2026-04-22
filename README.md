@@ -1,6 +1,7 @@
+
 ---
 
-# AlgoMentor - Elevate Your DSA Skills with AI 💻✨
+# AlgoMentor - Elevate Your DSA Skills with AI
 
 **Learn, Debug, and Succeed** with AI-powered assistance.
 
@@ -37,7 +38,7 @@ We faced inconsistencies with the Gemini AI model's content generation. To overc
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/Debanjannnn/DACCY
+   git clone https://github.com/psykickguy/AlgoMentor
    ```
 2. Navigate to the project directory:
    ```bash
