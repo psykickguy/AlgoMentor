@@ -43,7 +43,8 @@ export default function Component() {
           {[
             {
               title: "Visual Learning",
-              description: "Discover how to enhance your understanding through visual techniques.",
+              description:
+                "Discover how to enhance your understanding through visual techniques.",
               link: "/pages/graphtopic",
               buttonText: "Get Started",
             },
@@ -96,7 +97,7 @@ export default function Component() {
       </main>
       <footer className="bg-background py-8">
         <div className="mx-auto px-6 text-center text-muted-foreground">
-          <p>&copy; Daccy. All rights reserved.</p>
+          <p>&copy; AlgoMentor. All rights reserved.</p>
         </div>
       </footer>
     </div>

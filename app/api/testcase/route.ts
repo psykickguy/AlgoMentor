@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 
-// Initialize Generative AI with your API key
-const apiKey = process.env.GEMINI_API_KEY || "";
-
-if (!apiKey) {
-  throw new Error("GEMINI_API_KEY is not defined in environment variables");
-}
-
-const genai = new GoogleGenerativeAI(apiKey);
+const client = new OpenAI({
+  apiKey: "ollama",
+  baseURL: "http://localhost:11434/v1",
+});
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,30 +17,64 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get the generative model
-    const model = genai.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const prompt = `
+Generate only JSON and nothing else.
 
-    // Generate the test cases
-    const prompt = `Generate only and nothing else but a list of at least 3 diverse and valid test cases for the following problem description. Each test case should include an 'input' and 'expectedOutput'. The 'input' should be a structured object (e.g., an array, string, number, etc.), and the 'expectedOutput' should be a corresponding result. Provide at least one edge case. The format should be JSON, and there should be no additional explanations. Problem description:\n\n${problemDescription}`;
+Generate at least 3 diverse and valid test cases for the following coding problem.
 
-    const result = await model.generateContent(prompt);
+Each test case must contain:
+- input
+- expectedOutput
 
-    // Extract the test cases from the response
-    const responseText = await result.response.text(); // Adjust this based on actual response structure
-    const testCasesMatch = responseText.match(
-      /(?:```json\n)?([\s\S]*?)(?:```|$)/,
-    );
+Rules:
+- input should be structured properly
+- include at least one edge case
+- do not include markdown
+- do not include explanations
+- return only a JSON array
 
-    // If the test case generation is successful, parse the JSON data
-    const testCases = testCasesMatch
-      ? JSON.parse(testCasesMatch[1])
-      : { error: "No test cases generated" };
+Problem description:
+${problemDescription}
+`;
+
+    const completion = await client.chat.completions.create({
+      model: "qwen2.5-coder:1.5b",
+      temperature: 0.4,
+      max_tokens: 300,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You generate JSON test cases for coding problems. Only return valid JSON.",
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+    });
+
+    const responseText = completion.choices[0]?.message?.content || "";
+
+    const cleanedText = responseText
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
+
+    let testCases;
+
+    try {
+      testCases = JSON.parse(cleanedText);
+    } catch {
+      testCases = { error: "Failed to parse generated test cases" };
+    }
 
     return NextResponse.json({
       testCases,
     });
   } catch (error) {
     console.error("Error generating test cases:", error);
+
     return NextResponse.json(
       { message: "Error generating test cases" },
       { status: 500 },

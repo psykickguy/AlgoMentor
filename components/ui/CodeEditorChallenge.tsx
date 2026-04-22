@@ -52,27 +52,53 @@ export function CodeEditorWithPistonProps({
 
   const runCode = async () => {
     try {
-      const response = await fetch("https://emkc.org/api/v2/piston/execute", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const languageMap: Record<string, number> = {
+        c: 50,
+        cpp: 54,
+        "c++": 54,
+        python: 71,
+        javascript: 63,
+        java: 62,
+      };
+
+      const languageId = languageMap[language.toLowerCase()] || 63;
+
+      const response = await fetch(
+        "https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=false&wait=true",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-RapidAPI-Key": process.env.NEXT_PUBLIC_RAPIDAPI_KEY || "",
+            "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com",
+          },
+          body: JSON.stringify({
+            language_id: languageId,
+            source_code: code,
+            stdin: "",
+          }),
         },
-        body: JSON.stringify({
-          language: language,
-          version: selectedLanguage.pistonVersion,
-          files: [
-            {
-              content: code,
-            },
-          ],
-        }),
-      });
+      );
 
       const data = await response.json();
-      setOutput(data.run.output);
+
+      if (!response.ok) {
+        console.error("Judge0 API Error:", data);
+
+        setOutput(data.message || "Execution failed");
+        return;
+      }
+
+      setOutput(
+        data.stdout ||
+          data.stderr ||
+          data.compile_output ||
+          data.message ||
+          "No output returned",
+      );
     } catch (error) {
       console.error("Error executing code:", error);
-      setOutput("Error executing code. Please try again.");
+      setOutput("Failed to execute code");
     }
   };
 

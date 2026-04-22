@@ -1,61 +1,102 @@
-'use client'
+"use client";
 
-import { useState, useEffect, useRef } from 'react'
-import { Editor, OnMount } from '@monaco-editor/react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Code, Play } from 'lucide-react'
-import { languageConfigs, LanguageConfig } from '@/utils/languageConfig'
-import * as monaco from 'monaco-editor';
+import { useState, useEffect, useRef } from "react";
+import { Editor, OnMount } from "@monaco-editor/react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Code, Play } from "lucide-react";
+import { languageConfigs, LanguageConfig } from "../utils/languageConfig";
+import * as monaco from "monaco-editor";
 
 interface CodeEditorWithPistonProps {
-  darkMode: boolean
+  darkMode: boolean;
 }
 
 export function CodeEditorWithPiston({ darkMode }: CodeEditorWithPistonProps) {
-  const [selectedLanguage, setSelectedLanguage] = useState<LanguageConfig>(languageConfigs[0])
-  const [code, setCode] = useState<string>(selectedLanguage.boilerplate)
-  const [output, setOutput] = useState<string>('')
-  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null)
+  const [selectedLanguage, setSelectedLanguage] = useState<LanguageConfig>(
+    languageConfigs[0],
+  );
+  const [code, setCode] = useState<string>(selectedLanguage.boilerplate);
+  const [output, setOutput] = useState<string>("");
+  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
 
   useEffect(() => {
-    setCode(selectedLanguage.boilerplate)
-  }, [selectedLanguage])
+    setCode(selectedLanguage.boilerplate);
+  }, [selectedLanguage]);
 
   const handleEditorDidMount: OnMount = (editor) => {
-    editorRef.current = editor
-  }
+    editorRef.current = editor;
+  };
 
   const formatCode = () => {
-    setCode((prevCode) => prevCode.trim().replace(/\n\s*\n/g, '\n\n'))
-  }
+    setCode((prevCode) => prevCode.trim().replace(/\n\s*\n/g, "\n\n"));
+  };
 
   const runCode = async () => {
     try {
-      const response = await fetch('https://emkc.org/api/v2/piston/execute', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          language: selectedLanguage.pistonLanguage,
-          version: selectedLanguage.pistonVersion,
-          files: [
-            {
-              content: code,
-            },
-          ],
-        }),
-      })
+      const languageMap: Record<string, number> = {
+        c: 50,
+        cpp: 54,
+        "c++": 54,
+        python: 71,
+        javascript: 63,
+        java: 62,
+      };
 
-      const data = await response.json()
-      setOutput(data.run.output)
+      const languageId =
+        languageMap[selectedLanguage.pistonLanguage.toLowerCase()] || 63;
+
+      const response = await fetch(
+        "https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=false&wait=true",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-RapidAPI-Key": process.env.NEXT_PUBLIC_RAPIDAPI_KEY || "",
+            "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com",
+          },
+          body: JSON.stringify({
+            language_id: languageId,
+            source_code: code,
+            stdin: "",
+          }),
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("Judge0 API Error:", data);
+        setOutput(data.message || "Execution failed");
+        return;
+      }
+
+      setOutput(
+        data.stdout ||
+          data.stderr ||
+          data.compile_output ||
+          data.message ||
+          "No output returned",
+      );
     } catch (error) {
-      console.error('Error executing code:', error)
-      setOutput('Error executing code. Please try again.')
+      console.error("Error executing code:", error);
+      setOutput("Failed to execute code");
     }
-  }
+  };
 
   return (
     <Card className="w-full max-w-3xl">
@@ -65,7 +106,12 @@ export function CodeEditorWithPiston({ darkMode }: CodeEditorWithPistonProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         <Select
-          onValueChange={(value) => setSelectedLanguage(languageConfigs.find(lang => lang.name === value) || languageConfigs[0])}
+          onValueChange={(value) =>
+            setSelectedLanguage(
+              languageConfigs.find((lang) => lang.name === value) ||
+                languageConfigs[0],
+            )
+          }
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Select Language" />
@@ -81,7 +127,7 @@ export function CodeEditorWithPiston({ darkMode }: CodeEditorWithPistonProps) {
         <Editor
           height="400px"
           language={selectedLanguage.monacoLanguage}
-          theme={darkMode ? 'vs-dark' : 'light'}
+          theme={darkMode ? "vs-dark" : "light"}
           value={code}
           options={{
             minimap: { enabled: false },
@@ -89,7 +135,7 @@ export function CodeEditorWithPiston({ darkMode }: CodeEditorWithPistonProps) {
             tabSize: selectedLanguage.formatOptions.tabSize,
             insertSpaces: selectedLanguage.formatOptions.insertSpaces,
           }}
-          onChange={(value) => setCode(value || '')}
+          onChange={(value) => setCode(value || "")}
           onMount={handleEditorDidMount}
         />
       </CardContent>
@@ -114,6 +160,5 @@ export function CodeEditorWithPiston({ darkMode }: CodeEditorWithPistonProps) {
         )}
       </CardFooter>
     </Card>
-  )
+  );
 }
-

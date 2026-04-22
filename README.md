@@ -1,11 +1,10 @@
-
 ---
 
-# Daccy - Elevate Your DSA Skills with AI 💻✨
+# AlgoMentor - Elevate Your DSA Skills with AI 💻✨
 
 **Learn, Debug, and Succeed** with AI-powered assistance.
 
-Daccy is an AI-powered learning web application designed to help users master Data Structures and Algorithms (DSA) through real-time debugging support, personalized learning paths, and AI-generated challenges.
+AlgoMentor is an AI-powered learning web application designed to help users master Data Structures and Algorithms (DSA) through real-time debugging support, personalized learning paths, and AI-generated challenges.
 
 ## Features
 

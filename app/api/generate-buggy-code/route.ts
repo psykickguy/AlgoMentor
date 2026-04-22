@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 
-// Initialize Generative AI with your API key
-const apiKey = process.env.GEMINI_API_KEY || "";
-
-if (!apiKey) {
-  throw new Error("GEMINI_API_KEY is not defined in environment variables");
-}
-
-const genai = new GoogleGenerativeAI(apiKey);
+const client = new OpenAI({
+  apiKey: "ollama",
+  baseURL: "http://localhost:11434/v1",
+});
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,35 +17,117 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get the generative model
-    const model = genai.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const codePrompt = `Generate a buggy code which isn't easy to fix for a ${level} level problem in ${language}. Only provide the code, no markdown, no comments, and no extra text.`;
 
-    // Generate the buggy code
-    const prompt = `Generate a buggy code which isn't easy to fix for a ${level} level problem in ${language}. Only provide the code, you may remove random lines, no comments, and no extra text.`;
-    const result = await model.generateContent(prompt);
+    const codeCompletion = await client.chat.completions.create({
+      model: "qwen2.5-coder:1.5b",
+      temperature: 0.9,
+      max_tokens: 400,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You generate buggy programming questions for students. Only return raw code.",
+        },
+        {
+          role: "user",
+          content: codePrompt,
+        },
+      ],
+    });
 
-    // Extract the code using regex
-    const responseText = result.response.text(); // Adjust this based on actual response structure
+    const responseText = codeCompletion.choices[0]?.message?.content || "";
+
     const codeMatch = responseText.match(/(?:```[\w+]*\n)?([\s\S]*?)(?:```|$)/);
-    const buggyCode = codeMatch ? codeMatch[1] : "No code generated"; // Do not trim to preserve indentation
 
-    // Prepare prompts for hints, title, and resolution guidance
-    const hintPrompt = `Provide a clear and concise explanation of the following code. The explanation should include a brief overview of the program's functionality, a breakdown of each key component and its purpose, and an outline of the input/output behavior. Aim for clarity and precision, ensuring that the description is easy to understand for someone with a basic understanding of ${language}. The total length should not exceed 500 characters. Here is the code:\n${buggyCode}`;
-    const problemTitlePrompt = `Generate the problem title for ${buggyCode}, with no unnecessary text or special characters: `;
-    const resolveHintsPrompt = `Analyze the following buggy code and generate a list of specific, actionable hints to resolve the bugs. The hints should include identifying missing or incorrect lines, potential logic errors, and syntax issues. Do not fix the code, only provide hints. Keep the list concise and clear. Here is the code:\n${buggyCode}`;
+    const buggyCode = codeMatch ? codeMatch[1] : "No code generated";
 
-    // Run all prompts concurrently
-    const [hintResult, problemTitleResult, resolveHintsResult] =
-      await Promise.all([
-        model.generateContent(hintPrompt),
-        model.generateContent(problemTitlePrompt),
-        model.generateContent(resolveHintsPrompt),
-      ]);
+    const hintPrompt = `Provide a clear and concise explanation of the following code. The explanation should include:
+- Brief overview of the program
+- Main components and purpose
+- Expected input/output behavior
 
-    // Extract results
-    const hint = hintResult.response.text(); // Adjust this based on actual response structure
-    const problemTitleText = problemTitleResult.response.text(); // Ensure this is called correctly
-    const resolveHints = resolveHintsResult.response.text(); // Ensure this extracts the resolution hints correctly
+Keep it under 500 characters.
+
+Code:
+${buggyCode}`;
+
+    const problemTitlePrompt = `Generate a short problem title for this code. Only return the title with no quotes or special formatting.
+
+Code:
+${buggyCode}`;
+
+    const resolveHintsPrompt = `Analyze the following buggy code and generate a concise list of hints to help fix it.
+
+Do not fix the code.
+Do not rewrite the code.
+Only give hints about:
+- Missing or incorrect lines
+- Logic mistakes
+- Syntax issues
+
+Code:
+${buggyCode}`;
+
+    const [hintResult, titleResult, resolveHintsResult] = await Promise.all([
+      client.chat.completions.create({
+        model: "qwen2.5-coder:1.5b",
+        temperature: 0.5,
+        max_tokens: 200,
+        messages: [
+          {
+            role: "system",
+            content: "You explain code clearly and briefly.",
+          },
+          {
+            role: "user",
+            content: hintPrompt,
+          },
+        ],
+      }),
+
+      client.chat.completions.create({
+        model: "qwen2.5-coder:1.5b",
+        temperature: 0.4,
+        max_tokens: 30,
+        messages: [
+          {
+            role: "system",
+            content: "You generate short coding problem titles.",
+          },
+          {
+            role: "user",
+            content: problemTitlePrompt,
+          },
+        ],
+      }),
+
+      client.chat.completions.create({
+        model: "qwen2.5-coder:1.5b",
+        temperature: 0.6,
+        max_tokens: 200,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You give concise debugging hints without fixing the code.",
+          },
+          {
+            role: "user",
+            content: resolveHintsPrompt,
+          },
+        ],
+      }),
+    ]);
+
+    const hint = hintResult.choices[0]?.message?.content || "No hint generated";
+
+    const problemTitleText =
+      titleResult.choices[0]?.message?.content || "Untitled Problem";
+
+    const resolveHints =
+      resolveHintsResult.choices[0]?.message?.content ||
+      "No debugging hints generated";
 
     return NextResponse.json({
       code: buggyCode,
@@ -59,6 +137,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error("Error fetching buggy code:", error);
+
     return NextResponse.json(
       { message: "Error generating buggy code" },
       { status: 500 },

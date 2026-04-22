@@ -1,26 +1,15 @@
 import { NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { HarmBlockThreshold, HarmCategory } from "@google/generative-ai";
+import OpenAI from "openai";
 
-// Define safety settings for the AI model
-const safetySettings = [
-  {
-    category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-    threshold: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
-  },
-  {
-    category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-    threshold: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
-  },
-];
+const client = new OpenAI({
+  apiKey: "ollama",
+  baseURL: "http://localhost:11434/v1",
+});
 
-// POST request handler
 export async function POST(req: Request) {
   try {
-    // Parse the incoming request data
     const { selectedTopic, language } = await req.json();
 
-    // Validate required fields
     if (!selectedTopic) {
       return NextResponse.json(
         { error: "Missing required fields" },
@@ -28,24 +17,33 @@ export async function POST(req: Request) {
       );
     }
 
-    // Initialize Google Generative AI model
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
-      safetySettings,
-    });
-
-    // Construct the prompt for the AI model
     const prompt = createPrompt(selectedTopic, language);
 
-    // Generate content from the AI model
-    const result = await model.generateContent(prompt);
-    const aiResponse = result.response.text();
+    const completion = await client.chat.completions.create({
+      model: "qwen2.5-coder:1.5b",
+      temperature: 0.7,
+      max_tokens: 300,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a helpful AI tutor for coding, DSA, and programming concepts.",
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+    });
 
-    // Return the AI's response
-    return NextResponse.json({ reply: aiResponse });
+    const aiResponse = completion.choices[0]?.message?.content;
+
+    return NextResponse.json({
+      reply: aiResponse || "No response generated",
+    });
   } catch (error) {
     console.error("Error:", error);
+
     return NextResponse.json(
       { error: "An error occurred while processing your request" },
       { status: 500 },
@@ -53,18 +51,16 @@ export async function POST(req: Request) {
   }
 }
 
-// Helper function to create a prompt based on the input parameters
 function createPrompt(selectedTopic: string, language?: string): string {
   let basePrompt = `You are an AI tutor specializing in ${selectedTopic}.`;
 
-  // Include language context if provided
   if (language) {
-    basePrompt = `You are an AI tutor specializing in ${selectedTopic} using ${language}. 
-                  ${basePrompt}`;
+    basePrompt = `You are an AI tutor specializing in ${selectedTopic} using ${language}. ${basePrompt}`;
   }
 
-  // Suggest including code examples if applicable
-  basePrompt += ` If code examples are appropriate, please include them.`;
+  basePrompt += ` Explain the topic clearly and simply.`;
+
+  basePrompt += ` If code examples are appropriate, include them.`;
 
   return basePrompt;
 }

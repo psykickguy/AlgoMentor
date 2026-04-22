@@ -1,26 +1,26 @@
-'use client'
+"use client";
 
-import { Moon, Sun } from 'lucide-react'
-import { Button } from "@/components/ui/button"
-import { useTheme } from "next-themes"
-import Link from 'next/link'
-import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs'
+import { Moon, Sun } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useTheme } from "next-themes";
+import Link from "next/link";
+import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 
 interface NavbarProps {
-  showBackButton?: boolean
-  backButtonRoute?: string
+  showBackButton?: boolean;
+  backButtonRoute?: string;
 }
 
-export function NavbarComponent({ 
-  showBackButton = false, 
-  backButtonRoute = '/' 
+export function NavbarComponent({
+  showBackButton = false,
+  backButtonRoute = "/",
 }: NavbarProps) {
-  const { theme, setTheme } = useTheme()
+  const { theme, setTheme } = useTheme();
 
   return (
     <header className="p-6 flex justify-between items-center">
       <h1 className="text-2xl">
-        <Link href="/">Daccy</Link>
+        <Link href="/">AlgoMentor</Link>
       </h1>
       <nav className="flex items-center gap-4">
         {/* Theme toggle button */}
@@ -56,5 +56,5 @@ export function NavbarComponent({
         )}
       </nav>
     </header>
-  )
+  );
 }
