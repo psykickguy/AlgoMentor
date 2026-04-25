@@ -10,14 +10,15 @@ AlgoMentor is an AI-powered learning web application designed to help users mast
 ## Features
 
 - **AI-Based DSA Challenges**: Problems generated based on user-selected difficulty levels with intentional bugs for learning.
-- **AI Chatbot**: Get answers to DSA-related questions using Gemini AI.
+- **AI Chatbot**: Get answers to DSA-related questions using a locally running Qwen AI model.
 - **Generative Learning**: Automatically generated content on DSA topics like arrays, linked lists, and more.
 
 ## Challenges
 
-We faced inconsistencies with the Gemini AI model's content generation. To overcome this:
-- **Refined input prompts** for more accurate results.
-- Implemented **quality control** by reviewing AI-generated content.
+We faced inconsistencies while integrating AI models and running them locally. To overcome this:
+- **Optimized prompts** for better response quality from Qwen.
+- Switched to local **LLM (Qwen via Ollama)** to avoid API limits and latency.
+- Managed **resource constraints** (RAM/CPU) by selecting lightweight models.
 - Added a **user feedback system** for continuous improvement.
 
 ## Tech Stack
