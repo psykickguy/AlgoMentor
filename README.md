@@ -25,7 +25,7 @@ We faced inconsistencies with the Gemini AI model's content generation. To overc
 - **Frontend**: Nextjs
 - **Backend**: Node.js, Express.js
 - **Database**: Prism ORM
-- **AI**: Gemini AI
+- **AI**: Ollama (for running Qwen locally)
 
 ## Getting Started
 
