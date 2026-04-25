@@ -42,19 +42,24 @@ We faced inconsistencies with the Gemini AI model's content generation. To overc
    ```
 2. Navigate to the project directory:
    ```bash
-   cd DACCY
+   cd AlgoMentor
    ```
 3. Install dependencies:
    ```bash
    npm install
    ```
-
+4. Install and run Ollama:
+```bash
+ollama pull qwen2.5-coder:1.5b
+ollama run qwen2.5-coder:1.5b
+```
 ### Environment Variables
 
 Create a `.env` file and add:
 
 ```env
-GEMINI_API_KEY=
+OLLAMA_BASE_URL=http://localhost:11434/v1
+OLLAMA_MODEL=qwen2.5-coder:1.5b
 ```
 
 ### Run the Project
